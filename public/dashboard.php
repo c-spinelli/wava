@@ -68,6 +68,45 @@ if (!$dayLog) {
     $dayLog = $stmtLog->fetch();
 }
 
+// Listar workouts del día
+$stmtWorkouts = $pdo->prepare("
+    SELECT id, workout_type, minutes, notes
+    FROM workouts
+    WHERE day_log_id = :day_log_id
+    ORDER BY id DESC
+");
+$stmtWorkouts->execute(['day_log_id' => $dayLog['id']]);
+$workouts = $stmtWorkouts->fetchAll();
+
+// Añadir workout
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_workout') {
+    $type = trim($_POST['workout_type'] ?? '');
+    $minutes = (int)($_POST['minutes'] ?? 0);
+    $notesW = trim($_POST['workout_notes'] ?? '');
+
+    if ($type === '') $errors[] = 'Tipo de ejercicio es obligatorio';
+    if ($minutes <= 0) $errors[] = 'Minutos debe ser mayor a 0';
+
+    if (empty($errors)) {
+        $ins = $pdo->prepare("
+            INSERT INTO workouts (day_log_id, workout_type, minutes, notes)
+            VALUES (:day_log_id, :type, :minutes, :notes)
+        ");
+        $ins->execute([
+            'day_log_id' => $dayLog['id'],
+            'type' => $type,
+            'minutes' => $minutes,
+            'notes' => $notesW
+        ]);
+
+        // Redirect para evitar reenvío del form
+        header('Location: dashboard.php?date=' . urlencode($selectedDate));
+        exit;
+    }
+}
+
+
+
 // Guardar cambios del día
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $water = (int)($_POST['water_ml'] ?? 0);
@@ -111,7 +150,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dayLog = $stmtLog->fetch();
     }
 }
+
+// Eliminar workout
+if (isset($_GET['delete_workout_id'])) {
+    $deleteId = (int)$_GET['delete_workout_id'];
+
+    $del = $pdo->prepare("
+        DELETE FROM workouts
+        WHERE id = :id AND day_log_id = :day_log_id
+    ");
+    $del->execute([
+        'id' => $deleteId,
+        'day_log_id' => $dayLog['id']
+    ]);
+
+    header('Location: dashboard.php?date=' . urlencode($selectedDate));
+    exit;
+}
+
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="es">
@@ -207,6 +266,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p style="margin-top:20px; color:#666;">
         (Próximo paso: tarjetas de progreso + ejercicios múltiples + fetch)
     </p>
+
+    <h3>Ejercicios del día</h3>
+
+    <form method="POST">
+        <input type="hidden" name="action" value="add_workout">
+
+        <label>Tipo:
+            <select name="workout_type">
+                <option value="">-- seleccionar --</option>
+                <option value="running">Running</option>
+                <option value="strength">Fuerza</option>
+                <option value="yoga">Yoga</option>
+                <option value="cycling">Spinning</option>
+                <option value="boxing">Boxing</option>
+                <option value="walking">Caminata</option>
+            </select>
+        </label>
+
+        <label>Minutos:
+            <input type="number" name="minutes" min="1">
+        </label>
+
+        <label>Nota:
+            <input type="text" name="workout_notes">
+        </label>
+
+        <button type="submit">Añadir ejercicio</button>
+    </form>
+
+    <?php if (empty($workouts)): ?>
+        <p>No hay ejercicios registrados para este día.</p>
+    <?php else: ?>
+        <ul>
+            <?php foreach ($workouts as $w): ?>
+                <li>
+                    <?= htmlspecialchars($w['workout_type']) ?> —
+                    <?= (int)$w['minutes'] ?> min
+                    <?php if (!empty($w['notes'])): ?>
+                        (<?= htmlspecialchars($w['notes']) ?>)
+                    <?php endif; ?>
+                    <a href="dashboard.php?date=<?= urlencode($selectedDate) ?>&delete_workout_id=<?= (int)$w['id'] ?>"
+                        onclick="return confirm('¿Eliminar este ejercicio?');">
+                        Eliminar
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+
 
 </body>
 
