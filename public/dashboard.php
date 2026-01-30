@@ -29,6 +29,32 @@ $stmtLog = $pdo->prepare("
 ");
 $stmtLog->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
 $dayLog = $stmtLog->fetch();
+// Total minutos de ejercicio del día
+$stmtWorkoutSum = $pdo->prepare("
+    SELECT SUM(minutes) as total_minutes
+    FROM workouts
+    WHERE day_log_id = :day_log_id
+");
+$stmtWorkoutSum->execute(['day_log_id' => $dayLog['id']]);
+$workoutSum = $stmtWorkoutSum->fetch();
+
+$totalExerciseMinutes = (int)($workoutSum['total_minutes'] ?? 0);
+
+function progressPercent($current, $goal)
+{
+    if ($goal <= 0) return 0;
+    return round(($current / $goal) * 100);
+}
+
+
+$progressWater = progressPercent($dayLog['water_ml'], $userGoals['goal_water_ml']);
+$progressProtein = progressPercent($dayLog['protein_g'], $userGoals['goal_protein_g']);
+$progressExercise = progressPercent($totalExerciseMinutes, $userGoals['goal_exercise_minutes']);
+$progressSleep = $dayLog['sleep_hours'] !== null
+    ? progressPercent($dayLog['sleep_hours'], $userGoals['goal_sleep_hours'])
+    : null;
+
+
 
 // Si no existe, crearlo vacío (esto simplifica el flujo)
 if (!$dayLog) {
@@ -106,6 +132,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </p>
 
     <h2>Día: <?= htmlspecialchars($selectedDate) ?></h2>
+    <h2>Progreso del día</h2>
+
+    <ul>
+        <li>
+            Agua: <?= $dayLog['water_ml'] ?> / <?= $userGoals['goal_water_ml'] ?> ml
+            (<?= $progressWater ?>%)
+        </li>
+        <li>
+            Proteína: <?= $dayLog['protein_g'] ?> / <?= $userGoals['goal_protein_g'] ?> g
+            (<?= $progressProtein ?>%)
+        </li>
+        <li>
+            Ejercicio: <?= $totalExerciseMinutes ?> / <?= $userGoals['goal_exercise_minutes'] ?> min
+            (<?= $progressExercise ?>%)
+        </li>
+        <li>
+            Sueño:
+            <?php if ($progressSleep !== null): ?>
+                <?= $dayLog['sleep_hours'] ?> / <?= $userGoals['goal_sleep_hours'] ?> h
+                (<?= $progressSleep ?>%)
+            <?php else: ?>
+                no registrado
+            <?php endif; ?>
+        </li>
+    </ul>
+
 
     <form method="GET">
         <label>Seleccionar fecha:
