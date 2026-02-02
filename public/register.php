@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     <?php endif; ?>
 
-                    <form class="auth-form" method="POST" action="register.php" novalidate>
+                    <form id="registerForm" class="auth-form" method="POST" action="register.php" novalidate>
                         <div class="field">
                             <label for="name">Nombre</label>
                             <input id="name" name="name" type="text" placeholder="Tu nombre" value="<?= htmlspecialchars($name) ?>" required>
@@ -108,6 +108,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </aside>
         </div>
     </main>
+
+    <script src="../assets/js/validation.js"></script>
+
 
 </body>
 

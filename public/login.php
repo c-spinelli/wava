@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="auth-card">
-                    <form class="auth-form" method="POST" action="login.php" novalidate>
+                    <form id="loginForm" class="auth-form" method="POST" action="login.php" novalidate>
                         <div class="field">
                             <label for="email">Email</label>
                             <input id="email" name="email" type="email" placeholder="tu@email.com" required>
@@ -88,6 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </aside>
         </div>
     </main>
+
+    <script src="../assets/js/validation.js"></script>
+
 
 </body>
 
