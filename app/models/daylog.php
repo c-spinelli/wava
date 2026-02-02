@@ -9,32 +9,64 @@ class DayLog
         $this->pdo = $pdo;
     }
 
-    public function findOrCreate(int $userId, string $dateYmd): int
+    public function findByUserAndDate(int $userId, string $dateYmd): ?array
     {
-        // Buscar
         $stmt = $this->pdo->prepare("
-            SELECT id FROM day_logs
+            SELECT *
+            FROM day_logs
             WHERE user_id = :user_id AND log_date = :log_date
             LIMIT 1
         ");
-        $stmt->execute(['user_id' => $userId, 'log_date' => $dateYmd]);
-        $id = (int)($stmt->fetchColumn() ?? 0);
+        $stmt->execute([
+            'user_id' => $userId,
+            'log_date' => $dateYmd
+        ]);
 
-        if ($id > 0) return $id;
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
 
-        // Crear
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM day_logs WHERE id = :id LIMIT 1");
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function findOrCreate(int $userId, string $dateYmd): array
+    {
+        $existing = $this->findByUserAndDate($userId, $dateYmd);
+        if ($existing) return $existing;
+
+        // crea vacío
         $ins = $this->pdo->prepare("
-            INSERT INTO day_logs (user_id, log_date)
-            VALUES (:user_id, :log_date)
+            INSERT INTO day_logs (user_id, log_date, water_ml, protein_g, sleep_hours, energy_level, notes)
+            VALUES (:user_id, :log_date, 0, 0, NULL, NULL, '')
         ");
-        $ins->execute(['user_id' => $userId, 'log_date' => $dateYmd]);
+        $ins->execute([
+            'user_id' => $userId,
+            'log_date' => $dateYmd
+        ]);
 
-        return (int)$this->pdo->lastInsertId();
+        $id = (int)$this->pdo->lastInsertId();
+        return $this->findById($id) ?: [
+            'id' => $id,
+            'user_id' => $userId,
+            'log_date' => $dateYmd,
+            'water_ml' => 0,
+            'protein_g' => 0,
+            'sleep_hours' => null,
+            'energy_level' => null,
+            'notes' => ''
+        ];
     }
 
     public function update(int $dayLogId, array $data): void
     {
         $allowed = ['water_ml', 'protein_g', 'sleep_hours', 'energy_level', 'notes'];
+
         $set = [];
         $params = ['id' => $dayLogId];
 

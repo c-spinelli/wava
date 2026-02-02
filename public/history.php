@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../app/lib/auth.php';
 require_once __DIR__ . '/../app/config/db.php';
+require_once __DIR__ . '/../app/Models/DayLog.php';
+
 
 requireAuth();
 
@@ -43,74 +45,53 @@ $workouts = [];
 $totalExerciseMinutes = 0;
 
 if ($selectedDate) {
-    // traer day_log
-    $stmtLog = $pdo->prepare("SELECT * FROM day_logs WHERE user_id = :uid AND log_date = :d LIMIT 1");
-    $stmtLog->execute(['uid' => $userId, 'd' => $selectedDate]);
-    $dayLog = $stmtLog->fetch(PDO::FETCH_ASSOC);
+    $dayLogModel = new DayLog($pdo);
 
-    // si no existe, crearlo vacío (igual que dashboard)
-    if (!$dayLog) {
-        $create = $pdo->prepare("
-      INSERT INTO day_logs (user_id, log_date, water_ml, protein_g, sleep_hours, energy_level, notes)
-      VALUES (:uid, :d, 0, 0, NULL, NULL, '')
-    ");
-        $create->execute(['uid' => $userId, 'd' => $selectedDate]);
+    // Traer o crear day_log 
+    $dayLog = $dayLogModel->findOrCreate($userId, $selectedDate);
 
-        $stmtLog->execute(['uid' => $userId, 'd' => $selectedDate]);
-        $dayLog = $stmtLog->fetch(PDO::FETCH_ASSOC);
-    }
-
-    // guardar cambios del día (POST) — igual que dashboard
+    // guardar cambios del día (POST)
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_day') {
         $water = (int)($_POST['water_ml'] ?? 0);
         $protein = (int)($_POST['protein_g'] ?? 0);
-        $sleep = $_POST['sleep_hours'] !== '' ? (float)$_POST['sleep_hours'] : null;
-        $energy = $_POST['energy_level'] !== '' ? (int)$_POST['energy_level'] : null;
+        $sleep = ($_POST['sleep_hours'] ?? '') !== '' ? (float)$_POST['sleep_hours'] : null;
+        $energy = ($_POST['energy_level'] ?? '') !== '' ? (int)$_POST['energy_level'] : null;
         $notes = trim($_POST['notes'] ?? '');
 
         if ($water < 0 || $protein < 0) $errors[] = 'Agua y proteína no pueden ser negativas';
         if ($energy !== null && ($energy < 1 || $energy > 10)) $errors[] = 'Energía debe estar entre 1 y 10';
 
         if (!$errors) {
-            $update = $pdo->prepare("
-        UPDATE day_logs
-        SET water_ml=:water_ml, protein_g=:protein_g, sleep_hours=:sleep_hours,
-            energy_level=:energy_level, notes=:notes
-        WHERE id=:id
-      ");
-            $update->execute([
+            $dayLogModel->update((int)$dayLog['id'], [
                 'water_ml' => $water,
                 'protein_g' => $protein,
                 'sleep_hours' => $sleep,
                 'energy_level' => $energy,
-                'notes' => $notes,
-                'id' => $dayLog['id']
+                'notes' => $notes
             ]);
 
             $success = true;
 
-            // recargar
-            $stmtLog->execute(['uid' => $userId, 'd' => $selectedDate]);
-            $dayLog = $stmtLog->fetch(PDO::FETCH_ASSOC);
+            // recargar 
+            $dayLog = $dayLogModel->findById((int)$dayLog['id']) ?? $dayLog;
         }
     }
 
-    // workouts del día
+    // workouts del día 
     $stmtWorkouts = $pdo->prepare("
-    SELECT id, workout_type, minutes, notes
-    FROM workouts
-    WHERE day_log_id = :day_log_id
-    ORDER BY id DESC
-  ");
-    $stmtWorkouts->execute(['day_log_id' => $dayLog['id']]);
+        SELECT id, workout_type, minutes, notes
+        FROM workouts
+        WHERE day_log_id = :day_log_id
+        ORDER BY id DESC
+    ");
+    $stmtWorkouts->execute(['day_log_id' => (int)$dayLog['id']]);
     $workouts = $stmtWorkouts->fetchAll(PDO::FETCH_ASSOC);
 
-    // total minutos
+    // total minutos (se queda igual)
     $sum = $pdo->prepare("SELECT COALESCE(SUM(minutes),0) FROM workouts WHERE day_log_id = :id");
-    $sum->execute(['id' => $dayLog['id']]);
+    $sum->execute(['id' => (int)$dayLog['id']]);
     $totalExerciseMinutes = (int)$sum->fetchColumn();
 }
-
 
 $prevYm = $monthStart->modify('-1 month')->format('Y-m');
 $nextYm = $monthStart->modify('+1 month')->format('Y-m');
