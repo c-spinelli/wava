@@ -99,11 +99,15 @@ if ($createdAt) {
 
     <link rel="stylesheet" href="../assets/css/base.css">
     <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+
+    <link rel="stylesheet" href="../assets/css/perfil.css">
+
     <link rel="stylesheet" href="../assets/css/styles.css">
     <script src="../assets/js/app.js" defer></script>
 </head>
 
-<body class="app">
+<body class="app page-profile">
     <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
@@ -149,7 +153,6 @@ if ($createdAt) {
         <?php endif; ?>
 
         <section class="profile-grid">
-            <!-- Columna izquierda -->
             <aside class="profile-side">
                 <div class="panel profile-card">
                     <div class="profile-avatar" aria-hidden="true">
@@ -198,7 +201,6 @@ if ($createdAt) {
                 </div>
             </aside>
 
-            <!-- Columna derecha -->
             <div class="profile-main">
                 <form method="POST" class="profile-form">
                     <section class="panel">
@@ -253,7 +255,6 @@ if ($createdAt) {
                         </div>
 
                         <div class="goals">
-                            <!-- Agua -->
                             <div class="goal-card goal-water">
                                 <div class="goal-top">
                                     <div class="goal-left">
@@ -283,7 +284,6 @@ if ($createdAt) {
                                 </div>
                             </div>
 
-                            <!-- Proteína -->
                             <div class="goal-card goal-protein">
                                 <div class="goal-top">
                                     <div class="goal-left">
@@ -313,7 +313,6 @@ if ($createdAt) {
                                 </div>
                             </div>
 
-                            <!-- Ejercicio -->
                             <div class="goal-card goal-exercise">
                                 <div class="goal-top">
                                     <div class="goal-left">
@@ -343,7 +342,6 @@ if ($createdAt) {
                                 </div>
                             </div>
 
-                            <!-- Sueño -->
                             <div class="goal-card goal-sleep">
                                 <div class="goal-top">
                                     <div class="goal-left">

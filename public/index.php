@@ -37,8 +37,6 @@ if (!empty($_SESSION['user_id'])) {
     </header>
 
     <main>
-
-        <!-- HERO FULL WIDTH -->
         <section class="hero">
             <div class="container hero-grid">
                 <div class="hero-copy">
@@ -58,7 +56,6 @@ if (!empty($_SESSION['user_id'])) {
                         <a class="btn btn-ghost" href="#features">Ver demo</a>
                     </div>
 
-                    <!-- STATS como en la landing ejemplo (con separadores) -->
                     <div class="hero-stats">
                         <div class="stat">
                             <div class="stat-big">10K+</div>
@@ -89,7 +86,6 @@ if (!empty($_SESSION['user_id'])) {
             </div>
         </section>
 
-        <!-- FEATURES -->
         <section class="section" id="features">
             <div class="section-inner">
                 <div class="section-head center">
@@ -125,7 +121,6 @@ if (!empty($_SESSION['user_id'])) {
             </div>
         </section>
 
-        <!-- TESTIMONIOS -->
         <section class="section section-muted" id="testimonios">
             <div class="section-inner">
                 <div class="section-head center">
@@ -169,7 +164,7 @@ if (!empty($_SESSION['user_id'])) {
                             “Perfecta para registrar agua y proteína. Me encanta poder editar el día sin complicarme.”
                         </p>
                         <div class="reviewer">
-                            <img class="review-avatar" src="../assets/img/review3.jpg" alt="Foto de Laura Martínez">
+                            <img class="review-avatar" src="../assets/img/review1.jpg" alt="Foto de Laura Martínez">
                             <div>
                                 <div class="name">Laura Martínez</div>
                                 <div class="role">Nutricionista</div>

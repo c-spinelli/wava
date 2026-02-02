@@ -77,6 +77,15 @@
   .panel-head h2{
     font-size: 16px;
   }
+
+  /* ---------- Panel (global) ---------- */
+.panel{
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 16px;
+  }
   
   .section-title{
     font-size: 14px;
