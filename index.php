@@ -1,3 +1,3 @@
 <?php
-echo "Wava funcionando";
-
+header("Location: /wava/public/");
+exit;

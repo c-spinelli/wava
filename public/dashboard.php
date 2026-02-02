@@ -10,6 +10,11 @@ $success = false;
 
 // Fecha seleccionada (por defecto hoy)
 $selectedDate = $_GET['date'] ?? date('Y-m-d');
+$today = date('Y-m-d');
+if ($selectedDate > $today) {
+    $selectedDate = $today;
+}
+
 
 // Traer objetivos del usuario (para el siguiente paso: tarjetas)
 $stmtUser = $pdo->prepare("
@@ -29,6 +34,19 @@ $stmtLog = $pdo->prepare("
 ");
 $stmtLog->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
 $dayLog = $stmtLog->fetch();
+
+// Si no existe, crearlo vacío (simplifica el flujo)
+if (!$dayLog) {
+    $create = $pdo->prepare("
+    INSERT INTO day_logs (user_id, log_date, water_ml, protein_g, sleep_hours, energy_level, notes)
+    VALUES (:user_id, :log_date, 0, 0, NULL, NULL, '')    
+    ");
+    $create->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
+
+    $stmtLog->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
+    $dayLog = $stmtLog->fetch();
+}
+
 // Total minutos de ejercicio del día
 $stmtWorkoutSum = $pdo->prepare("
     SELECT SUM(minutes) as total_minutes
@@ -40,11 +58,12 @@ $workoutSum = $stmtWorkoutSum->fetch();
 
 $totalExerciseMinutes = (int)($workoutSum['total_minutes'] ?? 0);
 
-function progressPercent($current, $goal)
+
+/*function progressPercent($current, $goal)
 {
     if ($goal <= 0) return 0;
     return round(($current / $goal) * 100);
-}
+}*/
 
 
 $progressWater = progressPercent($dayLog['water_ml'], $userGoals['goal_water_ml']);
@@ -53,20 +72,6 @@ $progressExercise = progressPercent($totalExerciseMinutes, $userGoals['goal_exer
 $progressSleep = $dayLog['sleep_hours'] !== null
     ? progressPercent($dayLog['sleep_hours'], $userGoals['goal_sleep_hours'])
     : null;
-
-
-
-// Si no existe, crearlo vacío (esto simplifica el flujo)
-if (!$dayLog) {
-    $create = $pdo->prepare("
-        INSERT INTO day_logs (user_id, log_date, water_ml, protein_g)
-        VALUES (:user_id, :log_date, 0, 0)
-    ");
-    $create->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
-
-    $stmtLog->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
-    $dayLog = $stmtLog->fetch();
-}
 
 // Listar workouts del día
 $stmtWorkouts = $pdo->prepare("
@@ -79,7 +84,7 @@ $stmtWorkouts->execute(['day_log_id' => $dayLog['id']]);
 $workouts = $stmtWorkouts->fetchAll();
 
 // Añadir workout
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_workout') {
+/*if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_workout') {
     $type = trim($_POST['workout_type'] ?? '');
     $minutes = (int)($_POST['minutes'] ?? 0);
     $notesW = trim($_POST['workout_notes'] ?? '');
@@ -103,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_w
         header('Location: dashboard.php?date=' . urlencode($selectedDate));
         exit;
     }
-}
+}*/
 
 
 
@@ -125,23 +130,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $update = $pdo->prepare("
-            UPDATE day_logs SET
-                water_ml = :water,
-                protein_g = :protein,
-                sleep_hours = :sleep,
-                energy_level = :energy,
-                notes = :notes
-            WHERE id = :id
+        UPDATE day_logs
+        SET water_ml=:water_ml, protein_g=:protein_g, sleep_hours=:sleep_hours,
+            energy_level=:energy_level, notes=:notes
+        WHERE id=:id
+        
         ");
 
         $update->execute([
-            'water' => $water,
-            'protein' => $protein,
-            'sleep' => $sleep,
-            'energy' => $energy,
+            'water_ml' => $water,
+            'protein_g' => $protein,
+            'sleep_hours' => $sleep,
+            'energy_level' => $energy,
             'notes' => $notes,
             'id' => $dayLog['id']
         ]);
+
 
         $success = true;
 
@@ -168,6 +172,33 @@ if (isset($_GET['delete_workout_id'])) {
     exit;
 }
 
+// Recalcular minutos de ejercicio (siempre con day_log ya definido)
+$stmtWorkoutSum = $pdo->prepare("
+  SELECT COALESCE(SUM(minutes),0) as total_minutes
+  FROM workouts
+  WHERE day_log_id = :day_log_id
+");
+$stmtWorkoutSum->execute(['day_log_id' => $dayLog['id']]);
+$totalExerciseMinutes = (int)$stmtWorkoutSum->fetch()['total_minutes'];
+
+function progressPercent($current, $goal)
+{
+    $goal = (float)$goal;
+    if ($goal <= 0) return 0;
+    return (int)round(((float)$current / $goal) * 100);
+}
+
+$progressWater   = progressPercent((int)$dayLog['water_ml'], (int)$userGoals['goal_water_ml']);
+$progressProtein = progressPercent((int)$dayLog['protein_g'], (int)$userGoals['goal_protein_g']);
+$progressExercise = progressPercent($totalExerciseMinutes, (int)$userGoals['goal_exercise_minutes']);
+
+$progressSleep = ($dayLog['sleep_hours'] !== null)
+    ? progressPercent((float)$dayLog['sleep_hours'], (int)$userGoals['goal_sleep_hours'])
+    : null;
+
+$notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF-8');
+
+
 ?>
 
 
@@ -178,142 +209,349 @@ if (isset($_GET['delete_workout_id'])) {
 <head>
     <meta charset="UTF-8">
     <title>Dashboard – Wava</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/app.js" defer></script>
 </head>
 
-<body>
+<body class="app">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">≋</div>
+                <div class="brand-name">Wava</div>
+            </div>
 
-    <h1>Dashboard</h1>
+            <nav class="nav">
+                <a class="nav-link active" href="dashboard.php">Dashboard</a>
+                <a class="nav-link" href="history.php">Historial</a>
+                <a class="nav-link" href="profile.php">Perfil</a>
+            </nav>
 
-    <p>
-        <a href="profile.php">Perfil</a> |
-        <a href="history.php">Historial</a> |
-        <a href="logout.php">Salir</a>
-    </p>
+            <div class="topbar-actions">
+                <div class="avatar" aria-label="Usuario"></div>
+            </div>
+        </div>
+    </header>
 
-    <h2>Día: <?= htmlspecialchars($selectedDate) ?></h2>
-    <h2>Progreso del día</h2>
+    <main class="container">
+        <div class="hero">
+            <div>
+                <h1>TRACK YOUR DAY</h1>
+                <p class="subtitle">Registra tus hábitos y alcanza tus objetivos</p>
+            </div>
 
-    <ul>
-        <li>
-            Agua: <?= $dayLog['water_ml'] ?> / <?= $userGoals['goal_water_ml'] ?> ml
-            (<?= $progressWater ?>%)
-        </li>
-        <li>
-            Proteína: <?= $dayLog['protein_g'] ?> / <?= $userGoals['goal_protein_g'] ?> g
-            (<?= $progressProtein ?>%)
-        </li>
-        <li>
-            Ejercicio: <?= $totalExerciseMinutes ?> / <?= $userGoals['goal_exercise_minutes'] ?> min
-            (<?= $progressExercise ?>%)
-        </li>
-        <li>
-            Sueño:
-            <?php if ($progressSleep !== null): ?>
-                <?= $dayLog['sleep_hours'] ?> / <?= $userGoals['goal_sleep_hours'] ?> h
-                (<?= $progressSleep ?>%)
-            <?php else: ?>
-                no registrado
-            <?php endif; ?>
-        </li>
-    </ul>
+            <form class="date-nav" method="GET">
+                <button class="date-btn" type="button" onclick="moveDate(-1)" aria-label="Día anterior">‹</button>
+                <label class="date-pill">
+                    <span class="cal">📅</span>
+                    <input class="date-input" type="date" name="date" value="<?= htmlspecialchars($selectedDate) ?>" max="<?= date('Y-m-d') ?>">
+                </label>
+                <?php $isToday = ($selectedDate >= date('Y-m-d')); ?>
+                <button class="date-btn" type="button"
+                    onclick="moveDate(1)"
+                    aria-label="Día siguiente"
+                    <?= $isToday ? 'disabled' : '' ?>>›</button>
+
+            </form>
+        </div>
+
+        <?php
+        function ringPct($pct)
+        {
+            return max(0, min(100, (int)$pct));
+        }
+        $ringWater = ringPct($progressWater);
+        $ringProtein = ringPct($progressProtein);
+        $ringExercise = ringPct($progressExercise);
+        $ringSleep = $progressSleep !== null ? ringPct($progressSleep) : 0;
+        ?>
+
+        <section class="kpis">
+            <article class="kpi">
+                <div class="kpi-head">
+                    <div class="kpi-icon water">💧</div>
+                    <div class="kpi-title">AGUA</div>
+                </div>
+
+                <div class="ring" style="--p: <?= $ringWater ?>; --c: var(--blue);">
+                    <div class="ring-inner">
+                        <div class="ring-main"><?= (int)$dayLog['water_ml'] ?></div>
+                        <div class="ring-sub">/ <?= (int)$userGoals['goal_water_ml'] ?> ml</div>
+                    </div>
+                </div>
+
+                <div class="kpi-pct blue"><?= (int)$progressWater ?>%</div>
+            </article>
+
+            <article class="kpi">
+                <div class="kpi-head">
+                    <div class="kpi-icon protein">🥗</div>
+                    <div class="kpi-title">PROTEÍNA</div>
+                </div>
+
+                <div class="ring" style="--p: <?= $ringProtein ?>; --c: var(--green);">
+                    <div class="ring-inner">
+                        <div class="ring-main"><?= (int)$dayLog['protein_g'] ?></div>
+                        <div class="ring-sub">/ <?= (int)$userGoals['goal_protein_g'] ?> g</div>
+                    </div>
+                </div>
+
+                <div class="kpi-pct green"><?= (int)$progressProtein ?>%</div>
+            </article>
+
+            <article class="kpi">
+                <div class="kpi-head">
+                    <div class="kpi-icon exercise">🏋️</div>
+                    <div class="kpi-title">EJERCICIO</div>
+                </div>
+
+                <div
+                    id="kpi-exercise-ring"
+                    class="ring"
+                    data-goal="<?= (int)$userGoals['goal_exercise_minutes'] ?>"
+                    style="--p: <?= $ringExercise ?>; --c: var(--orange);">
+                    <div class="ring-inner">
+                        <div id="kpi-exercise-value" class="ring-main"><?= (int)$totalExerciseMinutes ?></div>
+                        <div class="ring-sub">/ <?= (int)$userGoals['goal_exercise_minutes'] ?> min</div>
+                    </div>
+                </div>
+
+                <div id="kpi-exercise-percent" class="kpi-pct orange"><?= (int)$progressExercise ?>%</div>
+
+            </article>
+
+            <article class="kpi">
+                <div class="kpi-head">
+                    <div class="kpi-icon sleep">🌙</div>
+                    <div class="kpi-title">SUEÑO</div>
+                </div>
+
+                <div class="ring" style="--p: <?= $ringSleep ?>; --c: var(--purple);">
+                    <div class="ring-inner">
+                        <div class="ring-main">
+                            <?= $dayLog['sleep_hours'] !== null ? htmlspecialchars($dayLog['sleep_hours']) : '—' ?>
+                        </div>
+                        <div class="ring-sub">/ <?= (int)$userGoals['goal_sleep_hours'] ?> hrs</div>
+                    </div>
+                </div>
+
+                <div class="kpi-pct purple">
+                    <?= $progressSleep !== null ? ((int)$progressSleep . '%') : '—' ?>
+                </div>
+            </article>
+        </section>
+
+        <?php if ($success): ?>
+            <div class="notice success">Día actualizado</div>
+        <?php endif; ?>
+
+        <?php if ($errors): ?>
+            <div class="notice error">
+                <?php foreach ($errors as $error): ?>
+                    <div><?= htmlspecialchars($error) ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <section class="layout">
+            <article class="panel">
+                <h2>Registro del Día</h2>
+
+                <form class="form" method="POST">
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Agua (ml)</span>
+                            <div class="control-wrap">
+                                <input class="control has-trail" type="number" name="water_ml" value="<?= (int)$dayLog['water_ml'] ?>">
+                                <span class="trail blue">💧</span>
+                            </div>
+                        </label>
+
+                        <label class="field">
+                            <span>Proteína (g)</span>
+                            <div class="control-wrap">
+                                <input class="control has-trail" type="number" name="protein_g" value="<?= (int)$dayLog['protein_g'] ?>">
+                                <span class="trail green">🥗</span>
+                            </div>
+                        </label>
 
 
-    <form method="GET">
-        <label>Seleccionar fecha:
-            <input type="date" name="date" value="<?= htmlspecialchars($selectedDate) ?>">
-        </label>
-        <button type="submit">Ir</button>
-    </form>
+                        <label class="field">
+                            <span>Horas de sueño</span>
+                            <div class="control-wrap">
+                                <input class="control" type="number" step="0.1" name="sleep_hours" value="<?= htmlspecialchars((string)($dayLog['sleep_hours'] ?? '')) ?>">
+                                <span class="trail purple">🌙</span>
+                            </div>
+                        </label>
 
-    <?php if ($success): ?>
-        <p style="color:green;">Día actualizado</p>
-    <?php endif; ?>
+                        <label class="field">
+                            <span>Nivel de energía (1–10)</span>
+                            <div class="range">
+                                <span class="range-label">Bajo</span>
+                                <input class="range-input" type="range" name="energy_level" min="1" max="10"
+                                    value="<?= (int)($dayLog['energy_level'] ?? 5) ?>"
+                                    oninput="document.getElementById('energyVal').textContent=this.value">
+                                <span class="range-label">Alto</span>
+                            </div>
+                            <div class="range-value"> <span id="energyVal"><?= (int)($dayLog['energy_level'] ?? 5) ?></span> </div>
+                        </label>
 
-    <?php if ($errors): ?>
-        <ul style="color:red;">
-            <?php foreach ($errors as $error): ?>
-                <li><?= htmlspecialchars($error) ?></li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+                    </div>
 
-    <h3>Registro del día</h3>
+                    <label class="field full">
+                        <span>Notas del día</span>
+                        <textarea class="control" name="notes" rows="4" placeholder="¿Cómo te sientes hoy?"><?= $notesSafe ?></textarea>
+                    </label>
 
-    <form method="POST">
-        <label>Agua (ml):
-            <input type="number" name="water_ml" value="<?= (int)$dayLog['water_ml'] ?>">
-        </label><br><br>
+                    <button class="primary" type="submit">Guardar Cambios</button>
+                </form>
+            </article>
 
-        <label>Proteína (g):
-            <input type="number" name="protein_g" value="<?= (int)$dayLog['protein_g'] ?>">
-        </label><br><br>
+            <aside class="side">
+                <div class="tips">
+                    <div class="tips-head">
+                        <span class="tips-badge">💧</span>
+                        <div>
+                            <div class="tips-title">Tip del día</div>
+                            <div class="tips-sub">Pequeños hábitos, gran diferencia</div>
+                        </div>
+                    </div>
 
-        <label>Sueño (horas):
-            <input type="number" step="0.1" name="sleep_hours" value="<?= htmlspecialchars($dayLog['sleep_hours']) ?>">
-        </label><br><br>
+                    <div class="tip-card tip-water">
+                        <div class="tip-emoji">💧</div>
+                        <div class="tip-body">
+                            <div class="tip-label">Hidratación</div>
+                            <div class="tip-text">Beber agua antes de cada comida puede ayudarte a alcanzar tu objetivo diario más fácilmente.</div>
+                        </div>
+                    </div>
 
-        <label>Energía (1–10):
-            <input type="number" name="energy_level" value="<?= htmlspecialchars($dayLog['energy_level']) ?>">
-        </label><br><br>
+                    <div class="tip-card tip-sleep">
+                        <div class="tip-emoji">🌙</div>
+                        <div class="tip-body">
+                            <div class="tip-label">Descanso</div>
+                            <div class="tip-text">Dormir al menos 7–8 horas mejora la recuperación y el rendimiento.</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
 
-        <label>Notas:<br>
-            <textarea name="notes" rows="4" cols="40"><?= htmlspecialchars($dayLog['notes']) ?></textarea>
-        </label><br><br>
 
-        <button type="submit">Guardar día</button>
-    </form>
+        </section>
 
-    <p style="margin-top:20px; color:#666;">
-        (Próximo paso: tarjetas de progreso + ejercicios múltiples + fetch)
-    </p>
+        <section class="panel">
+            <div class="panel-head">
+                <h2>Ejercicios de Hoy</h2>
 
-    <h3>Ejercicios del día</h3>
+                <button class="pill" type="button" id="toggleWorkoutForm">+ Añadir Ejercicio</button>
 
-    <form method="POST">
-        <input type="hidden" name="action" value="add_workout">
+            </div>
 
-        <label>Tipo:
-            <select name="workout_type">
-                <option value="">-- seleccionar --</option>
-                <option value="running">Running</option>
-                <option value="strength">Fuerza</option>
-                <option value="yoga">Yoga</option>
-                <option value="cycling">Spinning</option>
-                <option value="boxing">Boxing</option>
-                <option value="walking">Caminata</option>
-            </select>
-        </label>
+            <form id="workout-form" class="workout-form is-collapsed">
+                <input type="hidden" name="day_log_id" value="<?= (int)$dayLog['id'] ?>">
 
-        <label>Minutos:
-            <input type="number" name="minutes" min="1">
-        </label>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>Tipo</span>
+                        <select class="control" name="workout_type" required>
+                            <option value="">-- seleccionar --</option>
+                            <option value="running">Running</option>
+                            <option value="strength">Fuerza</option>
+                            <option value="yoga">Yoga</option>
+                            <option value="cycling">Spinning</option>
+                            <option value="boxing">Boxing</option>
+                            <option value="walking">Caminata</option>
+                        </select>
+                    </label>
 
-        <label>Nota:
-            <input type="text" name="workout_notes">
-        </label>
+                    <label class="field">
+                        <span>Minutos</span>
+                        <input class="control" type="number" name="minutes" min="1" required>
+                    </label>
+                </div>
 
-        <button type="submit">Añadir ejercicio</button>
-    </form>
+                <label class="field">
+                    <span>Nota (opcional)</span>
+                    <input class="control" type="text" name="workout_notes" placeholder="Ej: sprints">
+                </label>
 
-    <?php if (empty($workouts)): ?>
-        <p>No hay ejercicios registrados para este día.</p>
-    <?php else: ?>
-        <ul>
-            <?php foreach ($workouts as $w): ?>
-                <li>
-                    <?= htmlspecialchars($w['workout_type']) ?> —
-                    <?= (int)$w['minutes'] ?> min
-                    <?php if (!empty($w['notes'])): ?>
-                        (<?= htmlspecialchars($w['notes']) ?>)
-                    <?php endif; ?>
-                    <a href="dashboard.php?date=<?= urlencode($selectedDate) ?>&delete_workout_id=<?= (int)$w['id'] ?>"
-                        onclick="return confirm('¿Eliminar este ejercicio?');">
-                        Eliminar
-                    </a>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+                <div class="actions">
+                    <button class="primary" type="submit">Añadir</button>
+                </div>
+            </form>
+
+            <div class="workout-list" id="workout-list">
+                <?php foreach ($workouts as $w): ?>
+
+                    <?php
+                    // MAPAS de iconos y labels
+                    $workoutIcons = [
+                        'running'  => '🏃',
+                        'strength' => '🏋️',
+                        'boxing'   => '🥊',
+                        'yoga'     => '🧘',
+                        'cycling'  => '🚴',
+                        'walking'  => '🚶'
+                    ];
+
+                    $workoutLabels = [
+                        'running'  => 'Running',
+                        'strength' => 'Strength',
+                        'boxing'   => 'Boxing',
+                        'yoga'     => 'Yoga',
+                        'cycling'  => 'Cycling',
+                        'walking'  => 'Walking'
+                    ];
+
+                    $type  = $w['workout_type'];
+                    $icon  = $workoutIcons[$type] ?? '🎯';
+                    $title = $workoutLabels[$type] ?? ucfirst($type);
+                    ?>
+
+                    <div class="workout-card type-<?= htmlspecialchars($type) ?>">
+                        <div class="workout-icon"><?= $icon ?></div>
+
+                        <div class="workout-meta">
+                            <div class="workout-title"><?= htmlspecialchars($title) ?></div>
+                            <div class="workout-sub">
+                                <?= (int)$w['minutes'] ?> minutos
+                                <?= !empty($w['notes']) ? ' · ' . htmlspecialchars($w['notes']) : '' ?>
+                            </div>
+                        </div>
+
+                        <button class="trash" type="button" data-workout-id="<?= (int)$w['id'] ?>" aria-label="Eliminar">🗑️</button>
+
+                    </div>
+
+                <?php endforeach; ?>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        function moveDate(delta) {
+            const input = document.querySelector('input[name="date"]');
+            if (!input || !input.value) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const d = new Date(input.value + "T00:00:00");
+            d.setDate(d.getDate() + delta);
+
+            if (d > today) return; // bloquea futuro
+
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            input.value = `${yyyy}-${mm}-${dd}`;
+            input.form.submit();
+        }
+    </script>
+
 
 
 </body>

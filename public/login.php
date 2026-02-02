@@ -35,44 +35,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Login – Wava</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Iniciar sesión · Wava</title>
+
+    <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 
 <body>
 
-    <h1>Login</h1>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">≋</div>
+                <div class="brand-name">Wava</div>
+            </div>
+        </div>
+    </header>
 
-    <?php if ($errors): ?>
-        <ul style="color:red;">
-            <?php foreach ($errors as $error): ?>
-                <li><?= htmlspecialchars($error) ?></li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+    <main class="auth">
+        <div class="auth-inner">
+            <section class="auth-left">
+                <div class="auth-head">
+                    <h1 class="auth-title">Bienvenido de vuelta</h1>
+                    <p class="auth-subtitle">Continúa tu viaje hacia un estilo de vida más saludable</p>
+                </div>
 
-    <form method="POST">
-        <label>
-            Email:<br>
-            <input type="email" name="email" value="<?= htmlspecialchars($email) ?>">
-        </label><br><br>
+                <div class="auth-card">
+                    <form class="auth-form" method="POST" action="login.php" novalidate>
+                        <div class="field">
+                            <label for="email">Email</label>
+                            <input id="email" name="email" type="email" placeholder="tu@email.com" required>
+                        </div>
 
-        <label>
-            Contraseña:<br>
-            <input type="password" name="password">
-        </label><br><br>
+                        <div class="field">
+                            <label for="password">Contraseña</label>
+                            <input id="password" name="password" type="password" placeholder="••••••••" required>
+                        </div>
 
-        <button type="submit">Ingresar</button>
-    </form>
+                        <button class="btn btn-primary btn-block" type="submit">Iniciar Sesión</button>
 
-    <p>
-        ¿No tenés cuenta? <a href="register.php">Registrarse</a>
-    </p>
+                        <p class="auth-bottom">
+                            ¿No tenés cuenta?
+                            <a href="register.php">Registrate gratis</a>
+                        </p>
+                    </form>
+                </div>
+            </section>
+
+            <aside class="auth-right" aria-hidden="true">
+                <img src="../assets/img/login.jpg" alt="">
+            </aside>
+        </div>
+    </main>
 
 </body>
 
