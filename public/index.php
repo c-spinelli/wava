@@ -79,7 +79,7 @@ if (!empty($_SESSION['user_id'])) {
                 </div>
 
                 <div class="hero-visual">
-                    <img class="hero-image" src="../assets/img/dashboard.png" alt="Vista previa del dashboard de Wava">
+                    <img class="hero-image" src="../assets/img/dashboard.jpeg" alt="Vista previa del dashboard de Wava">
                 </div>
 
 
