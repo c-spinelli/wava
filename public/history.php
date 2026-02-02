@@ -210,12 +210,15 @@ $canGoNext = ($monthStart < $currentMonthStart);
 
     <link rel="stylesheet" href="../assets/css/base.css">
     <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+
+    <link rel="stylesheet" href="../assets/css/history.css">
+
     <link rel="stylesheet" href="../assets/css/styles.css">
     <script src="../assets/js/app.js" defer></script>
 </head>
 
-<body>
-    <!-- Topbar -->
+<body class="page-history">
     <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
@@ -230,7 +233,6 @@ $canGoNext = ($monthStart < $currentMonthStart);
             </nav>
 
             <div class="topbar-actions">
-                <div class="avatar" aria-label="Usuario"></div>
             </div>
         </div>
     </header>

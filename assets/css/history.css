@@ -1,0 +1,29 @@
+.page-history .control-wrap{
+    position: relative;
+  }
+  
+  .page-history .control.has-trail{
+    padding-right: 52px;
+  }
+  
+  .page-history .control-wrap > .trail{
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+  
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    padding: 0;
+    line-height: 1;
+    text-align: center;
+  
+    pointer-events: none;
+  }
+  

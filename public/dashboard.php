@@ -8,7 +8,6 @@ $userId = $_SESSION['user_id'];
 $errors = [];
 $success = false;
 
-// Fecha seleccionada (por defecto hoy)
 $selectedDate = $_GET['date'] ?? date('Y-m-d');
 $today = date('Y-m-d');
 if ($selectedDate > $today) {
@@ -16,7 +15,6 @@ if ($selectedDate > $today) {
 }
 
 
-// Traer objetivos del usuario (para el siguiente paso: tarjetas)
 $stmtUser = $pdo->prepare("
     SELECT goal_water_ml, goal_protein_g, goal_exercise_minutes, goal_sleep_hours
     FROM users WHERE id = :id
@@ -27,7 +25,6 @@ if (!$userGoals) {
     die('Usuario no encontrado');
 }
 
-// Buscar day_log del día
 $stmtLog = $pdo->prepare("
     SELECT * FROM day_logs
     WHERE user_id = :user_id AND log_date = :log_date
@@ -35,7 +32,6 @@ $stmtLog = $pdo->prepare("
 $stmtLog->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
 $dayLog = $stmtLog->fetch();
 
-// Si no existe, crearlo vacío (simplifica el flujo)
 if (!$dayLog) {
     $create = $pdo->prepare("
     INSERT INTO day_logs (user_id, log_date, water_ml, protein_g, sleep_hours, energy_level, notes)
@@ -47,7 +43,6 @@ if (!$dayLog) {
     $dayLog = $stmtLog->fetch();
 }
 
-// Total minutos de ejercicio del día
 $stmtWorkoutSum = $pdo->prepare("
     SELECT SUM(minutes) as total_minutes
     FROM workouts
@@ -58,14 +53,6 @@ $workoutSum = $stmtWorkoutSum->fetch();
 
 $totalExerciseMinutes = (int)($workoutSum['total_minutes'] ?? 0);
 
-
-/*function progressPercent($current, $goal)
-{
-    if ($goal <= 0) return 0;
-    return round(($current / $goal) * 100);
-}*/
-
-
 $progressWater = progressPercent($dayLog['water_ml'], $userGoals['goal_water_ml']);
 $progressProtein = progressPercent($dayLog['protein_g'], $userGoals['goal_protein_g']);
 $progressExercise = progressPercent($totalExerciseMinutes, $userGoals['goal_exercise_minutes']);
@@ -73,7 +60,6 @@ $progressSleep = $dayLog['sleep_hours'] !== null
     ? progressPercent($dayLog['sleep_hours'], $userGoals['goal_sleep_hours'])
     : null;
 
-// Listar workouts del día
 $stmtWorkouts = $pdo->prepare("
     SELECT id, workout_type, minutes, notes
     FROM workouts
@@ -83,7 +69,6 @@ $stmtWorkouts = $pdo->prepare("
 $stmtWorkouts->execute(['day_log_id' => $dayLog['id']]);
 $workouts = $stmtWorkouts->fetchAll();
 
-// Guardar cambios del día
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $water = (int)($_POST['water_ml'] ?? 0);
     $protein = (int)($_POST['protein_g'] ?? 0);
@@ -120,13 +105,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $success = true;
 
-        // Recargar el log actualizado
         $stmtLog->execute(['user_id' => $userId, 'log_date' => $selectedDate]);
         $dayLog = $stmtLog->fetch();
     }
 }
 
-// Eliminar workout
 if (isset($_GET['delete_workout_id'])) {
     $deleteId = (int)$_GET['delete_workout_id'];
 
@@ -143,7 +126,6 @@ if (isset($_GET['delete_workout_id'])) {
     exit;
 }
 
-// Recalcular minutos de ejercicio (siempre con day_log ya definido)
 $stmtWorkoutSum = $pdo->prepare("
   SELECT COALESCE(SUM(minutes),0) as total_minutes
   FROM workouts
@@ -465,7 +447,6 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
                 <?php foreach ($workouts as $w): ?>
 
                     <?php
-                    // MAPAS de iconos y labels
                     $workoutIcons = [
                         'running'  => '🏃',
                         'strength' => '🏋️',
@@ -522,7 +503,7 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
             const d = new Date(input.value + "T00:00:00");
             d.setDate(d.getDate() + delta);
 
-            if (d > today) return; // bloquea futuro
+            if (d > today) return;
 
             const yyyy = d.getFullYear();
             const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -530,7 +511,7 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
 
             input.value = `${yyyy}-${mm}-${dd}`;
 
-            // Auto-submit del form de fecha si existe
+
             const form = input.closest('form');
             if (form) form.submit();
         }
@@ -565,10 +546,8 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
                 isOpen ? closeForm() : openForm();
             };
 
-            // Estado inicial: cerrado
             closeForm();
 
-            // Click del botón: abrir/cerrar (captura para ganarle a otros listeners si existieran)
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -576,8 +555,6 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
                 toggleForm();
             }, true);
 
-            // ------- CERRAR AUTOMÁTICO tras "Añadir" exitoso -------
-            // Marcamos que hubo submit, y esperamos a que el DOM del listado cambie.
             let pendingAutoClose = false;
 
             wf.addEventListener('submit', () => {
@@ -588,16 +565,13 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
                 const obs = new MutationObserver((mutations) => {
                     if (!pendingAutoClose) return;
 
-                    // Si se añadieron nodos o cambió el listado => consideramos "éxito"
                     const changed = mutations.some(m => m.type === 'childList' || m.type === 'subtree');
                     if (!changed) return;
 
                     pendingAutoClose = false;
 
-                    // Reset de inputs (para el próximo alta)
                     wf.reset();
 
-                    // Cerrar y volver el botón a "Añadir"
                     closeForm();
                 });
 

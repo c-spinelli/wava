@@ -118,7 +118,6 @@ if ($createdAt) {
             </nav>
 
             <div class="topbar-actions">
-                <div class="avatar" aria-label="Usuario"></div>
             </div>
         </div>
     </header>
