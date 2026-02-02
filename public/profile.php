@@ -96,6 +96,9 @@ if ($createdAt) {
     <meta charset="UTF-8">
     <title>Perfil – Wava</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
     <script src="../assets/js/app.js" defer></script>
 </head>

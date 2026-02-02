@@ -83,35 +83,6 @@ $stmtWorkouts = $pdo->prepare("
 $stmtWorkouts->execute(['day_log_id' => $dayLog['id']]);
 $workouts = $stmtWorkouts->fetchAll();
 
-// Añadir workout
-/*if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_workout') {
-    $type = trim($_POST['workout_type'] ?? '');
-    $minutes = (int)($_POST['minutes'] ?? 0);
-    $notesW = trim($_POST['workout_notes'] ?? '');
-
-    if ($type === '') $errors[] = 'Tipo de ejercicio es obligatorio';
-    if ($minutes <= 0) $errors[] = 'Minutos debe ser mayor a 0';
-
-    if (empty($errors)) {
-        $ins = $pdo->prepare("
-            INSERT INTO workouts (day_log_id, workout_type, minutes, notes)
-            VALUES (:day_log_id, :type, :minutes, :notes)
-        ");
-        $ins->execute([
-            'day_log_id' => $dayLog['id'],
-            'type' => $type,
-            'minutes' => $minutes,
-            'notes' => $notesW
-        ]);
-
-        // Redirect para evitar reenvío del form
-        header('Location: dashboard.php?date=' . urlencode($selectedDate));
-        exit;
-    }
-}*/
-
-
-
 // Guardar cambios del día
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $water = (int)($_POST['water_ml'] ?? 0);
@@ -211,11 +182,17 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
     <title>Dashboard – Wava</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
+
     <link rel="stylesheet" href="../assets/css/styles.css">
     <script src="../assets/js/app.js" defer></script>
 </head>
 
-<body class="app">
+<body class="page-dashboard">
     <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
@@ -230,7 +207,6 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
             </nav>
 
             <div class="topbar-actions">
-                <div class="avatar" aria-label="Usuario"></div>
             </div>
         </div>
     </header>
@@ -381,7 +357,7 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
                         <label class="field">
                             <span>Horas de sueño</span>
                             <div class="control-wrap">
-                                <input class="control" type="number" step="0.1" name="sleep_hours" value="<?= htmlspecialchars((string)($dayLog['sleep_hours'] ?? '')) ?>">
+                                <input class="control has-trail" type="number" step="0.1" name="sleep_hours" value="<?= htmlspecialchars((string)($dayLog['sleep_hours'] ?? '')) ?>">
                                 <span class="trail purple">🌙</span>
                             </div>
                         </label>
@@ -444,11 +420,15 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
             <div class="panel-head">
                 <h2>Ejercicios de Hoy</h2>
 
-                <button class="pill" type="button" id="toggleWorkoutForm">+ Añadir Ejercicio</button>
+                <button class="pill" type="button" id="toggleWorkoutForm"
+                    aria-controls="workout-form" aria-expanded="false">
+                    + Añadir Ejercicio
+                </button>
 
             </div>
 
             <form id="workout-form" class="workout-form is-collapsed">
+
                 <input type="hidden" name="day_log_id" value="<?= (int)$dayLog['id'] ?>">
 
                 <div class="form-grid">
@@ -547,11 +527,87 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
             const yyyy = d.getFullYear();
             const mm = String(d.getMonth() + 1).padStart(2, '0');
             const dd = String(d.getDate()).padStart(2, '0');
+
             input.value = `${yyyy}-${mm}-${dd}`;
-            input.form.submit();
+
+            // Auto-submit del form de fecha si existe
+            const form = input.closest('form');
+            if (form) form.submit();
         }
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('toggleWorkoutForm');
+            const wf = document.getElementById('workout-form');
+            const list = document.getElementById('workout-list');
+            if (!btn || !wf) return;
+
+            // ------- helpers -------
+            const closeForm = () => {
+                wf.classList.add('is-collapsed');
+                wf.style.display = 'none';
+                btn.textContent = '+ Añadir Ejercicio';
+                btn.classList.remove('is-danger');
+                btn.setAttribute('aria-expanded', 'false');
+            };
+
+            const openForm = () => {
+                wf.classList.remove('is-collapsed');
+                wf.style.display = 'block';
+                btn.textContent = '✕ Cerrar';
+                btn.classList.add('is-danger');
+                btn.setAttribute('aria-expanded', 'true');
+            };
+
+            const toggleForm = () => {
+                const isOpen = !wf.classList.contains('is-collapsed');
+                isOpen ? closeForm() : openForm();
+            };
+
+            // Estado inicial: cerrado
+            closeForm();
+
+            // Click del botón: abrir/cerrar (captura para ganarle a otros listeners si existieran)
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                toggleForm();
+            }, true);
+
+            // ------- CERRAR AUTOMÁTICO tras "Añadir" exitoso -------
+            // Marcamos que hubo submit, y esperamos a que el DOM del listado cambie.
+            let pendingAutoClose = false;
+
+            wf.addEventListener('submit', () => {
+                pendingAutoClose = true;
+            }, true);
+
+            if (list) {
+                const obs = new MutationObserver((mutations) => {
+                    if (!pendingAutoClose) return;
+
+                    // Si se añadieron nodos o cambió el listado => consideramos "éxito"
+                    const changed = mutations.some(m => m.type === 'childList' || m.type === 'subtree');
+                    if (!changed) return;
+
+                    pendingAutoClose = false;
+
+                    // Reset de inputs (para el próximo alta)
+                    wf.reset();
+
+                    // Cerrar y volver el botón a "Añadir"
+                    closeForm();
+                });
+
+                obs.observe(list, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        });
+    </script>
 
 
 </body>

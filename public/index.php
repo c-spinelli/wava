@@ -14,6 +14,9 @@ if (!empty($_SESSION['user_id'])) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wava – Tu wellness, bajo control</title>
+
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/layout.css">
     <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 
