@@ -483,3 +483,238 @@
     display: none !important;
   }
   
+
+.hero h1{
+  margin:0; font-size:34px; letter-spacing:-.5px
+}
+
+.subtitle{
+  margin:8px 0 0; color: var(--muted)
+}
+
+.date-input{
+  border:none; outline:none; background:transparent;
+  font-weight:600; color:#111827;
+}
+
+.kpi-head{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom: 10px;
+}
+
+.kpi-icon.water{
+  background: rgba(59,130,246,.10); color: var(--blue)
+}
+
+.kpi-icon.protein{
+  background: rgba(52,211,153,.12); color: var(--green)
+}
+
+.kpi-icon.exercise{
+  background: rgba(245,158,11,.14); color: var(--orange)
+}
+
+.kpi-icon.sleep{
+  background: rgba(139,92,246,.12); color: var(--purple)
+}
+
+.kpi-title{
+  font-size:12px; letter-spacing:.12em;
+  color: var(--muted); font-weight:800;
+}
+
+.ring{
+  width: 140px; height: 140px;
+  margin: 10px auto 8px;
+  border-radius: 999px;
+  background:
+    conic-gradient(var(--c) calc(var(--p)*1%), rgba(17,24,39,.10) 0);
+  display:grid; place-items:center;
+}
+
+.ring-inner{
+  width: 116px; height: 116px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+
+.ring-main{
+  font-size:28px; font-weight:900; line-height:1
+}
+
+.ring-sub{
+  font-size:12px; color: var(--muted); margin-top: 3px
+}
+
+.kpi-pct{
+  font-weight:900; margin-top: 6px
+}
+
+.kpi-pct.blue{ color: var(--blue) }
+.kpi-pct.green{ color: var(--green) }
+.kpi-pct.orange{ color: var(--orange) }
+.kpi-pct.purple{ color: var(--purple) }
+
+.layout{
+  margin-top: 16px;
+  display:grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.panel h2{
+  margin:0 0 14px; font-size:16px
+}
+
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom: 12px;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.range{
+  display:flex; align-items:center; gap: 10px;
+}
+
+.range-label{
+  font-weight:700; color: var(--muted); font-size:12px;
+  min-width: 64px;
+}
+
+.range-input{
+  width: 100%;
+}
+
+.range-value{
+  font-weight:900;
+  min-width: 48px;
+  text-align:right;
+}
+
+.notice{
+  padding: 10px 12px;
+  border-radius: 14px;
+  border:1px solid var(--border);
+  background:#fff;
+  margin: 12px 0;
+}
+
+.notice.success{ border-color: rgba(52,211,153,.30) }
+.notice.error{ border-color: rgba(239,68,68,.30) }
+
+.workout-form{
+  display:grid;
+  grid-template-columns: 1fr 120px 140px;
+  gap: 12px;
+  align-items:end;
+}
+
+.workout-list{
+  margin-top: 14px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.actions{
+  display:flex;
+  gap: 10px;
+  justify-content:flex-end;
+}
+
+.tip-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  display:flex;
+  gap: 12px;
+  align-items:flex-start;
+}
+
+.tip-emoji{
+  width: 40px; height: 40px;
+  border-radius: 14px;
+  display:grid; place-items:center;
+  font-size: 18px;
+  background: rgba(17,24,39,.06);
+}
+
+.tip-body{
+  flex: 1;
+}
+
+.tip-label{
+  font-weight:900;
+  margin: 0 0 4px 0;
+}
+
+.tip-text{
+  margin: 0;
+  color: var(--muted);
+  line-height:1.35;
+}
+
+/* Responsive (dashboard) que también estaba en styles.css */
+@media (max-width: 980px){
+  .kpis{grid-template-columns: repeat(2, 1fr)}
+}
+
+@media (max-width: 560px){
+  .kpis{grid-template-columns: 1fr}
+}
+
+@media (max-width: 720px){
+  .form-grid{grid-template-columns: 1fr}
+}
+
+@media (max-width: 980px){
+  .workout-form{grid-template-columns: 1fr; align-items:stretch}
+}
+
+@media (max-width: 980px){
+  .form-grid{ grid-template-columns: 1fr; }
+}
+
+
+
+  /* ===== Mobile header: no perder navegación ===== */
+  @media (max-width: 720px){
+
+    /* 1) Permití que el header haga wrap */
+    .topbar{
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 14px;
+    }
+  
+    /* 2) Logo / brand ocupa primera línea */
+    .topbar .brand{
+      flex: 1 1 auto;
+      min-width: 160px;
+    }
+  
+    /* 3) Nav pasa a segunda línea y se centra */
+    .topbar-nav{
+      flex: 1 1 100%;
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      padding-bottom: 6px;
+    }
+  
+    /* 4) Links un poco más compactos */
+    .topbar-nav a{
+      font-size: 14px;
+      white-space: nowrap;
+    }
+  }

@@ -28,6 +28,24 @@
   
     /* Layout */
     --container-max: 1120px;
+
+      /* ---- Legacy aliases (para que dashboard.css no dependa de styles.css) ---- */
+  --bg: var(--bg-main);
+  --panel: var(--bg-card-solid);
+  --text: var(--text-main);
+  --muted: var(--text-muted);
+  --text-muted: var(--text-muted);
+  --border: var(--border-soft);
+
+  --blue: #3b82f6;
+  --green: #34d399;
+  --orange: #f59e0b;
+  --purple: #8b5cf6;
+
+  --radius: var(--radius-lg);
+  --shadow: var(--shadow-md);
+  --max: var(--container-max);
+
   }
   
   /* ---------- 2. Reset base ---------- */

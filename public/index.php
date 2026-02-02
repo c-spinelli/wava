@@ -20,7 +20,7 @@ if (!empty($_SESSION['user_id'])) {
 
     <link rel="stylesheet" href="../assets/css/index.css">
 
-    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/styles.legacy.css">
 </head>
 
 <body class="landing">

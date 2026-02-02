@@ -86,7 +86,7 @@ function isValidEmail(email) {
         if (!password.value) {
           setFieldError(password, "La contraseña es obligatoria.");
           ok = false;
-        } else if (password.value.length < 8) {
+        } else if (password.value.length < 6) {
           setFieldError(password, "La contraseña debe tener al menos 6 caracteres.");
           ok = false;
         }

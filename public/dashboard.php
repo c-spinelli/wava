@@ -169,8 +169,8 @@ $notesSafe = htmlspecialchars((string)($dayLog['notes'] ?? ''), ENT_QUOTES, 'UTF
     <link rel="stylesheet" href="../assets/css/components.css">
 
     <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../assets/css/styles.legacy.css">
 
-    <link rel="stylesheet" href="../assets/css/styles.css">
     <script src="../assets/js/app.js" defer></script>
 </head>
 
