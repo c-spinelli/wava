@@ -1,7 +1,6 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-// Si ya está logueado, no tiene sentido ver la landing
 if (!empty($_SESSION['user_id'])) {
     header('Location: dashboard.php');
     exit;
@@ -17,11 +16,14 @@ if (!empty($_SESSION['user_id'])) {
 
     <link rel="stylesheet" href="../assets/css/base.css">
     <link rel="stylesheet" href="../assets/css/layout.css">
+    <link rel="stylesheet" href="../assets/css/components.css">
+
+    <link rel="stylesheet" href="../assets/css/index.css">
+
     <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 
-<body>
-
+<body class="landing">
     <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
