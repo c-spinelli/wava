@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../app/lib/auth.php';
 require_once __DIR__ . '/../app/config/db.php';
-require_once __DIR__ . '/../app/Models/Workout.php';
+require_once __DIR__ . '/../app/models/workout.php';
 
 requireAuth();
 header('Content-Type: application/json');

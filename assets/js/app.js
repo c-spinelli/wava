@@ -97,28 +97,7 @@ function escapeHtml(str) {
       form.classList.toggle("is-collapsed");
     });
   });
-  
-  /*const iconMap = {
-    running: "🏃",
-    strength: "🏋️",
-    boxing: "🥊",
-    yoga: "🧘",
-    cycling: "🚴",
-    walking: "🚶"
-  };
-  
-  const labelMap = {
-    running: "Running",
-    strength: "Strength",
-    boxing: "Boxing",
-    yoga: "Yoga",
-    cycling: "Cycling",
-    walking: "Walking"
-  };
-  
-  const icon = iconMap[type] || "🎯";
-  const title = labelMap[type] || (type ? type[0].toUpperCase() + type.slice(1) : "Workout");
-  */
+
 
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".trash");

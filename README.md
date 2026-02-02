@@ -46,6 +46,10 @@ El proyecto corresponde a un **MVP funcional** desarrollado para la materia **In
 
 ## Instalación y ejecución
 
+## Repositorio
+
+https://github.com/c-spinelli/wava.git
+
 ### 1. Clonar o copiar el proyecto
 
 Colocar el proyecto dentro de la carpeta del servidor local (por ejemplo `htdocs` o `Applications/MAMP/htdocs`).

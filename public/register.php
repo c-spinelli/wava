@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../app/config/db.php';
-require_once __DIR__ . '/../app/Models/User.php';
+require_once __DIR__ . '/../app/models/user.php';
 
 $errors = [];
 $name = $email = '';

@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../app/lib/auth.php';
 require_once __DIR__ . '/../app/config/db.php';
-require_once __DIR__ . '/../app/Models/DayLog.php';
+require_once __DIR__ . '/../app/models/daylog.php';
 
 
 requireAuth();
