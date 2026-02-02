@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../app/config/db.php';
+require_once __DIR__ . '/../app/Models/User.php';
 
 $errors = [];
 $email = '';
@@ -8,33 +9,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'Email inválido';
-    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email inválido';
+    if ($password === '') $errors[] = 'La contraseña es obligatoria';
 
-    if ($password === '') {
-        $errors[] = 'La contraseña es obligatoria';
-    }
+    if (!$errors) {
+        $userModel = new User($pdo);
+        $user = $userModel->findByEmail($email);
 
-    if (empty($errors)) {
-        $stmt = $pdo->prepare(
-            "SELECT id, password_hash FROM users WHERE email = :email"
-        );
-        $stmt->execute(['email' => $email]);
-        $user = $stmt->fetch();
-
-        if ($user && password_verify($password, $user['password_hash'])) {
-            session_start();
-            $_SESSION['user_id'] = $user['id'];
-
+        if ($user && $userModel->verifyPassword($user, $password)) {
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            $_SESSION['user_id'] = (int)$user['id'];
             header('Location: dashboard.php');
             exit;
-        } else {
-            $errors[] = 'Credenciales incorrectas';
         }
+
+        $errors[] = 'Credenciales incorrectas';
     }
 }
 ?>
+
 <!doctype html>
 <html lang="es">
 
